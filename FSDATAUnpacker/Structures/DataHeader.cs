@@ -24,6 +24,11 @@
                 throw new EndOfStreamException("Cannot read beyond the end of the stream.");
             }
 
+            if (Length < 1)
+            {
+                return [];
+            }
+
             long currentPosition = stream.Position;
             stream.Position = Offset;
             var bytes = new byte[Length];

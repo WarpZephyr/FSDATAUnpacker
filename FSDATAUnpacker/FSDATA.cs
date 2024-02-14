@@ -1,11 +1,7 @@
 ﻿using Handlers;
 using Helpers;
 using Structures;
-using System;
-using System.IO;
-using System.Reflection;
 using System.Text;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace FSDATAUnpacker
 {
@@ -15,7 +11,7 @@ namespace FSDATAUnpacker
         private static readonly int ENTRY_MEMBER_COUNT = 2;
         private static readonly int ENTRY_SIZE = ENTRY_MEMBER_SIZE * ENTRY_MEMBER_COUNT;
         private static readonly int SECTOR_SIZE = 0x800;
-        private static readonly int ALIGNMENT_SIZE = 0x1000;
+        private static readonly int ALIGNMENT_SIZE = 0x8000;
 
         private int _entry_count;
         private int _base_address => ENTRY_SIZE * EntryCount;
@@ -145,17 +141,30 @@ namespace FSDATAUnpacker
                 // Get bytes and length 
                 PathExceptionHandler.ThrowIfNotFile(file.FileHeader.Path);
                 byte[] bytes = File.ReadAllBytes(file.FileHeader.Path);
-                long paddedLength = MathHelper.Align(bytes.LongLength, ALIGNMENT_SIZE);
+                long length = bytes.LongLength;
+                int sectorCount = (int)(MathHelper.Align(length, SECTOR_SIZE) / SECTOR_SIZE);
+                long paddedLength = MathHelper.Align(length, ALIGNMENT_SIZE);
+                int paddedSectorCount = (int)(paddedLength / SECTOR_SIZE);
+
+                // If padded sector count was not divisible by 16, add 16 padded sectors anyways.
+                // I don't know exactly why this is done, but it might have something to do with 0 length files.
+                // This doesn't perfectly match AC25DATA.BIN still, but it gets much closer.
+                // For some reason AC25DATA.BIN adds 16 sectors when the sector count specifically is perfectly divisible by 16, but other times it doesn't?
+                if (paddedSectorCount % 16 != 0)
+                {
+                    paddedSectorCount = (int)MathHelper.Align(paddedSectorCount, 16);
+                    paddedLength = paddedSectorCount * SECTOR_SIZE;
+                }
 
                 // Write entry and save the next entry position
                 bw.Write((int)((offset - baseAddress) / SECTOR_SIZE));
-                bw.Write((int)(paddedLength / SECTOR_SIZE));
+                bw.Write(sectorCount);
                 long nextEntryPos = bw.BaseStream.Position;
 
                 // Go to the file offset and write the file along with any padding, then return to write the next entry
                 bw.BaseStream.Position = offset;
                 bw.Write(bytes);
-                bw.BaseStream.Fill(paddedLength - bytes.LongLength);
+                bw.BaseStream.Fill(paddedLength - length);
                 bw.BaseStream.Position = nextEntryPos;
                 
                 // Add the total written length to the next offset and increment the file index
@@ -219,7 +228,7 @@ namespace FSDATAUnpacker
             int startSector = br.ReadInt32();
             int sectorCount = br.ReadInt32();
 
-            if (sectorCount > 0)
+            if (sectorCount > 0 || startSector > 0)
             {
                 long offset = (_base_address + (startSector * SECTOR_SIZE)) + streamStartPos;
                 long length = sectorCount * SECTOR_SIZE;

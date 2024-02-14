@@ -7,7 +7,7 @@
             var remainder = value % alignment;
             if (remainder > 0)
             {
-                return alignment - remainder;
+                return value + (alignment - remainder);
             }
             return value;
         }
