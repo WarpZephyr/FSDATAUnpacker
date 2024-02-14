@@ -48,11 +48,11 @@ The sector count is how many sectors the file data takes up, without additional 
 Each sector is 0x800 bytes in length, and they base off of where the entries end, and the data begins.  
 The first file will start immediately after the entries and have a start sector of 0 for example.  
 
-Each file pads to 0x8000, and so does each entry count it would appear.  
+Each file aligns to 0x8000, and so does each entry count it would appear.  
 I'm not sure if the entry count is perfectly 4096 or 8192.  
-They could just be padding to 0x8000 after the entries.  
+They could just be aligning to 0x8000 after the entries.  
 
-The padding to 0x8000 is not included in the sector count.  
+The aligning to 0x8000 is not included in the sector count.  
 Sector padding also ensures the total padded sector count is divisible by 16.  
 If the sector count of a file is 1580, that is not divisible by 16.  
 So the next file will begin at sector 1584, as observed in AC25DATA.BIN in Armored Core 2: Another Age.  
