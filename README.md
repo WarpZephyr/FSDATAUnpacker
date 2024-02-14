@@ -16,7 +16,7 @@ Make sure the ID is not beyond the entry count's range for the given game.
 Make sure you do not reuse the same ID, or the program will throw an error.  
 The max ID is entry count - 1.  
 
-The currently supported files their supported entry counts are:  
+The currently supported files and their supported entry counts are:  
 ERDATA.BIN   4096  
 AC2DATA.BIN  4096  
 AC25DATA.BIN 8192  
